@@ -1,0 +1,251 @@
+# مشروع RAG المتقدم - Agentic RAG System
+
+## هيكل المشروع
+
+```
+rag-project/
+├── README.md
+├── requirements.txt
+├── .env.example
+├── .gitignore
+├── main.py
+├── src/
+│   ├── __init__.py
+│   ├── document_processor.py
+│   ├── vector_store.py
+│   ├── llm_interface.py
+│   ├── rag_pipeline.py
+│   └── agents/
+│       ├── __init__.py
+│       ├── planning_agent.py
+│       ├── retrieval_agent.py
+│       └── synthesis_agent.py
+├── data/
+│   ├── documents/
+│   └── processed/
+├── tests/
+│   ├── __init__.py
+│   └── test_rag_pipeline.py
+├── notebooks/
+│   └── demo.ipynb
+└── config/
+    └── config.yaml
+```
+
+## ملف README.md
+
+```markdown
+# نظام RAG المتقدم مع الوكلاء الذكيين 🔥
+
+نظام استرجاع وتوليد معزز بالذكاء الاصطناعي يستخدم تقنية Agentic RAG لتوفير إجابات دقيقة ومحدثة.
+
+## المميزات
+
+✅ **حلقة تكرارية محسنة**: تؤدي لإجابات أكثر وضوحاً ودقة أفضل  
+✅ **تحقق قبل الإنشاء**: يضيف طبقة من التحقق لتقليل الأخطاء  
+✅ **تقليل الإجابات غير ذات الصلة**: فلترة ذكية للمحتوى  
+✅ **LLMs أقل سذاجة**: نماذج أكثر حذراً وذكاءً  
+✅ **مثالي للاستعلامات المعقدة**: يدعم التفكير متعدد الخطوات  
+
+## التقنيات المستخدمة
+
+- **Python 3.8+**
+- **LangChain**: لبناء pipeline الـ RAG
+- **ChromaDB**: قاعدة بيانات المتجهات
+- **OpenAI GPT**: نموذج اللغة الأساسي
+- **Streamlit**: واجهة المستخدم
+- **FastAPI**: API للمشروع
+
+## التثبيت والتشغيل
+
+### 1. استنساخ المشروع
+```bash
+git clone https://github.com/yourusername/advanced-rag-system.git
+cd advanced-rag-system
+```
+
+### 2. إنشاء البيئة الافتراضية
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# أو
+venv\Scripts\activate     # Windows
+```
+
+### 3. تثبيت المتطلبات
+```bash
+pip install -r requirements.txt
+```
+
+### 4. إعداد متغيرات البيئة
+```bash
+cp .env.example .env
+# أضف مفاتيح API الخاصة بك في ملف .env
+```
+
+### 5. تشغيل النظام
+```bash
+# تشغيل واجهة Streamlit
+streamlit run main.py
+
+# أو تشغيل API
+uvicorn src.api:app --reload
+```
+
+## كيفية الاستخدام
+
+### 1. رفع المستندات
+```python
+from src.rag_pipeline import RAGPipeline
+
+rag = RAGPipeline()
+rag.load_documents("path/to/your/documents")
+```
+
+### 2. طرح الأسئلة
+```python
+response = rag.query("ما هي أهم النقاط في المستند؟")
+print(response)
+```
+
+## معمارية النظام
+
+### وكيل التخطيط (Planning Agent)
+- يحلل الاستعلام ويخطط لاستراتيجية الاسترجاع
+- يقسم الأسئلة المعقدة لأجزاء أصغر
+
+### وكيل الاسترجاع (Retrieval Agent)
+- يبحث في قاعدة البيانات عن المعلومات ذات الصلة
+- يطبق فلاتر ذكية لتحسين النتائج
+
+### وكيل التركيب (Synthesis Agent)
+- يدمج المعلومات من مصادر متعددة
+- يتحقق من صحة الإجابات قبل التقديم
+
+## المساهمة
+
+نرحب بمساهماتكم! يرجى:
+1. Fork المشروع
+2. إنشاء branch جديد (`git checkout -b feature/amazing-feature`)
+3. Commit التغييرات (`git commit -m 'Add amazing feature'`)
+4. Push إلى Branch (`git push origin feature/amazing-feature`)
+5. فتح Pull Request
+
+## الترخيص
+
+هذا المشروع مرخص تحت رخصة MIT - راجع ملف [LICENSE](LICENSE) للتفاصيل.
+
+## التواصل
+
+- **المطور**: [اسمك]
+- **البريد الإلكتروني**: [بريدك الإلكتروني]
+- **LinkedIn**: [رابط LinkedIn]
+
+---
+⭐ إذا أعجبك المشروع، لا تنس إعطاؤه نجمة!
+```
+
+## ملف requirements.txt
+
+```txt
+langchain==0.1.0
+langchain-openai==0.0.5
+langchain-community==0.0.10
+chromadb==0.4.22
+streamlit==1.29.0
+fastapi==0.104.1
+uvicorn==0.24.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+tiktoken==0.5.2
+openai==1.6.0
+numpy==1.24.3
+pandas==2.0.3
+python-multipart==0.0.6
+aiofiles==23.2.1
+```
+
+## ملف .env.example
+
+```env
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Pinecone (اختياري)
+PINECONE_API_KEY=your_pinecone_key
+PINECONE_ENVIRONMENT=your_environment
+
+# Hugging Face (اختياري)
+HUGGINGFACE_API_KEY=your_hf_key
+
+# إعدادات النظام
+MAX_TOKENS=4000
+TEMPERATURE=0.1
+MODEL_NAME=gpt-4-turbo-preview
+```
+
+## ملف .gitignore
+
+```gitignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+
+# Data
+data/documents/*
+!data/documents/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# ChromaDB
+chroma_db/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+هذا هو الهيكل الأساسي لمشروعك! هل تريدين أن أنشئ لك الكود الفعلي للملفات الأساسية؟
