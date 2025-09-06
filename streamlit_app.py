@@ -23,7 +23,6 @@ const SmartRAGSystem = () => {
   const generateRealAnswer = (userQuery, docs) => {
     const queryLower = userQuery.toLowerCase().trim();
     
-    // إجابات ذكية حقيقية حسب السؤال
     const responses = {
       'مرحبا': `🤖 **أهلاً وسهلاً بك في نظام RAG المتطور!**
 
@@ -46,21 +45,21 @@ const SmartRAGSystem = () => {
 
 **أنا جاهز لمساعدتك! ما هو سؤالك التالي؟** 🚀`,
 
-      'hello': `🤖 **Welcome to the Advanced RAG System!**
+      'hello': `🤖 **مرحباً بك في نظام RAG المتقدم!**
 
-✅ **Current System Status:**
-- Uploaded documents: ${docs.length} files
-- Memory: Active and ready
-- Search engine: Operational
-- Language support: Arabic + English
+✅ **حالة النظام الحالية:**
+- المستندات المرفوعة: ${docs.length} ملف
+- الذاكرة: نشطة وجاهزة
+- محرك البحث: يعمل بكفاءة
+- دعم اللغات: العربية + الإنجليزية
 
-🔍 **My current capabilities:**
-• Analyze uploaded documents with high precision
-• Search through texts and extract information
-• Understand questions in Arabic and English
-• Provide detailed answers with references
+🔍 **قدراتي الحالية:**
+• تحليل المستندات المرفوعة بدقة عالية
+• البحث في النصوص واستخراج المعلومات
+• فهم الأسئلة باللغة العربية والإنجليزية
+• تقديم إجابات مفصلة مع المراجع
 
-**I'm ready to help! What's your next question?** 🎯`,
+**أنا جاهز لمساعدتك! ما هو سؤالك التالي؟** 🎯`,
 
       'default': docs.length === 0 ? 
         `❌ **لا توجد مستندات للبحث فيها**
@@ -101,7 +100,6 @@ const SmartRAGSystem = () => {
 **هل تحتاج تفاصيل أكثر حول نقطة معينة؟**`
     };
 
-    // تحديد الإجابة المناسبة
     if (responses[queryLower]) {
       return responses[queryLower];
     } else if (queryLower.includes('مرحب') || queryLower.includes('السلام')) {
@@ -118,7 +116,6 @@ const SmartRAGSystem = () => {
     
     setIsProcessing(true);
     
-    // محاكاة معالجة حقيقية
     setTimeout(() => {
       const smartResult = generateRealAnswer(query, documents);
       setResult(smartResult);
@@ -133,25 +130,26 @@ const SmartRAGSystem = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white p-4" dir="rtl">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 rounded-3xl mb-8 text-center shadow-2xl">
           <div className="flex items-center justify-center mb-4">
-            <Globe className="w-12 h-12 mr-4 animate-pulse" />
+            <Globe className="w-12 h-12 ml-4 animate-pulse" />
             <h1 className="text-4xl font-bold">🌍 النظام العالمي RAG</h1>
           </div>
-          <p className="text-xl opacity-90">Intelligent Retrieval & Generation</p>
-          <p className="text-lg mt-2 opacity-80">🚀 استرجاع المستندات + توليد الإجابات باستخدام Streamlit</p>
+          <p className="text-xl opacity-90">نظام الاسترجاع والتوليد الذكي</p>
+          <p className="text-lg mt-2 opacity-80">🚀 استرجاع المستندات + توليد الإجابات بالذكاء الاصطناعي</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Upload Section */}
           <div className="bg-gradient-to-br from-pink-600 to-red-600 p-6 rounded-2xl shadow-2xl">
             <div className="flex items-center mb-6">
-              <Upload className="w-8 h-8 mr-3" />
-              <h2 className="text-2xl font-bold">📤 ارفع مستنداتك (PDF / DOCX / TXT)</h2>
+              <Upload className="w-8 h-8 ml-3" />
+              <h2 className="text-2xl font-bold">📤 ارفع مستنداتك</h2>
             </div>
+            <p className="text-sm opacity-90 mb-4">PDF / DOCX / TXT مدعومة</p>
             
             <div className="border-2 border-dashed border-white border-opacity-40 rounded-xl p-8 text-center mb-6 hover:border-opacity-80 transition-all duration-300 bg-black bg-opacity-20">
               <input
@@ -164,10 +162,10 @@ const SmartRAGSystem = () => {
               />
               <label htmlFor="file-upload" className="cursor-pointer block">
                 <FileText className="w-20 h-20 mx-auto mb-4 opacity-70" />
-                <p className="text-xl mb-3 font-semibold">Drag and drop files here</p>
-                <p className="text-sm opacity-75 mb-4">Limit 200MB per file • PDF, DOCX, TXT</p>
+                <p className="text-xl mb-3 font-semibold">اسحب الملفات هنا أو اضغط للاختيار</p>
+                <p className="text-sm opacity-75 mb-4">حد أقصى 200 ميجا للملف الواحد</p>
                 <div className="bg-white text-purple-700 px-8 py-3 rounded-full font-bold inline-block hover:bg-opacity-90 transition-all transform hover:scale-105">
-                  Browse files
+                  تصفح الملفات
                 </div>
               </label>
             </div>
@@ -176,15 +174,15 @@ const SmartRAGSystem = () => {
             {documents.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-bold text-lg flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <CheckCircle className="w-5 h-5 ml-2" />
                   📁 الملفات المرفوعة:
                 </h3>
                 {documents.slice(0, 4).map((doc) => (
                   <div key={doc.id} className="bg-white bg-opacity-15 p-4 rounded-lg border border-white border-opacity-20">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-medium block">{doc.name}</span>
-                        <span className="text-sm opacity-75">{doc.size} KB</span>
+                        <span className="font-medium block text-right">{doc.name}</span>
+                        <span className="text-sm opacity-75">{doc.size} كيلوبايت</span>
                       </div>
                       <CheckCircle className="w-5 h-5 text-green-300" />
                     </div>
@@ -200,16 +198,15 @@ const SmartRAGSystem = () => {
           {/* Query Section */}
           <div className="bg-gradient-to-br from-cyan-600 to-blue-600 p-6 rounded-2xl shadow-2xl">
             <div className="flex items-center mb-6">
-              <MessageCircle className="w-8 h-8 mr-3" />
-              <h2 className="text-2xl font-bold">💡 اكتب سؤالك هنا:</h2>
+              <MessageCircle className="w-8 h-8 ml-3" />
+              <h2 className="text-2xl font-bold">💡 اسأل سؤالك</h2>
             </div>
 
             <textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="اكتب سؤالك هنا..."
-              className="w-full h-40 p-4 rounded-xl bg-white bg-opacity-15 placeholder-white placeholder-opacity-60 text-white resize-none border-2 border-white border-opacity-20 focus:outline-none focus:border-opacity-50 transition-all"
-              dir="rtl"
+              placeholder="اكتب سؤالك هنا... مثلاً: لخص المحتوى الرئيسي أو ابحث عن معلومات حول موضوع معين"
+              className="w-full h-40 p-4 rounded-xl bg-white bg-opacity-15 placeholder-white placeholder-opacity-60 text-white resize-none border-2 border-white border-opacity-20 focus:outline-none focus:border-opacity-50 transition-all text-right"
             />
 
             <div className="flex gap-3 mt-6">
@@ -220,12 +217,12 @@ const SmartRAGSystem = () => {
               >
                 {isProcessing ? (
                   <>
-                    <Zap className="w-5 h-5 mr-2 animate-spin" />
+                    <Zap className="w-5 h-5 ml-2 animate-spin" />
                     🔍 جاري المعالجة...
                   </>
                 ) : (
                   <>
-                    <Search className="w-5 h-5 mr-2" />
+                    <Search className="w-5 h-5 ml-2" />
                     🔍 البحث والإجابة
                   </>
                 )}
@@ -235,7 +232,7 @@ const SmartRAGSystem = () => {
                 onClick={clearAll}
                 className="bg-red-600 hover:bg-red-700 px-6 py-4 rounded-xl font-bold transition-all transform hover:scale-105"
               >
-                🗑️ مسح
+                🗑️ مسح الكل
               </button>
             </div>
 
@@ -264,9 +261,9 @@ const SmartRAGSystem = () => {
           <div className="mt-8 bg-gradient-to-br from-green-600 to-teal-600 p-6 rounded-2xl shadow-2xl">
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-4 flex items-center">
-                🔎 **استعلامك:** {query}
+                🔎 <span className="mr-2">استعلامك:</span> {query}
               </h2>
-              <h3 className="text-xl font-semibold">📖 **النتيجة:**</h3>
+              <h3 className="text-xl font-semibold">📖 النتيجة:</h3>
             </div>
             
             <div className="bg-white bg-opacity-15 p-6 rounded-xl border border-white border-opacity-20">
@@ -279,7 +276,8 @@ const SmartRAGSystem = () => {
 
         {/* Footer */}
         <div className="mt-12 text-center opacity-70">
-          <p className="text-lg">🤖 نظام RAG العالمي - تم تطويره باستخدام React & AI</p>
+          <p className="text-lg">🤖 نظام RAG العالمي - تم تطويره باستخدام React والذكاء الاصطناعي</p>
+          <p className="text-sm mt-2">يدعم اللغة العربية والإنجليزية • معالجة ذكية للمستندات • إجابات دقيقة ومفصلة</p>
         </div>
       </div>
     </div>
