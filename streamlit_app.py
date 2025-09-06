@@ -237,15 +237,15 @@ if search_clicked and query.strip():
 """
         
         answer = generate_smart_answer(query, st.session_state.documents)
+        
+        # مسح شريط التقدم
+        progress_bar.empty()
     
-    # عرض الإجابة
-    st.markdown("""
-    <div class="answer-box">
-        <h2>✨ الإجابة</h2>
-    </div>
-    """, unsafe_allow_html=True)
+    # عرض النتيجة بتنسيق مطابق للشكل المطلوب
+    st.markdown(f"📖 **النتيجة:**")
     
-    st.markdown(f'<div class="rtl-text">{answer}</div>', unsafe_allow_html=True)
+    # عرض الإجابة الذكية بدلاً من "رد تجريبي"
+    st.markdown(f'<div class="rtl-text" style="background: #f0f2f6; padding: 15px; border-radius: 10px; border-right: 4px solid #1f77b4;">{answer}</div>', unsafe_allow_html=True)
     
     # إحصائيات سريعة
     if st.session_state.documents:
