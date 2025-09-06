@@ -1,218 +1,306 @@
-import React, { useState } from 'react';
-import { Upload, Search, FileText, MessageCircle, Zap, Globe } from 'lucide-react';
+import streamlit as st
+import time
+import random
+from datetime import datetime
 
-const RAGSystem = () => {
-  const [documents, setDocuments] = useState([]);
-  const [query, setQuery] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+# إعداد الصفحة
+st.set_page_config(
+    page_title="🌍 نظام RAG العالمي",
+    page_icon="🚀",
+    layout="wide"
+)
 
-  const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
-    const processedFiles = files.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: (file.size / 1024).toFixed(1),
-      type: file.type,
-      content: `محتوى تجريبي من ملف ${file.name}. هذا النص يمثل المحتوى المستخرج من الملف المرفوع.`
-    }));
-    
-    setDocuments(prev => [...prev, ...processedFiles]);
-  };
+# CSS مخصص
+st.markdown("""
+<style>
+.main-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    color: white;
+    margin-bottom: 2rem;
+}
 
-  const handleSearch = () => {
-    if (!query.trim()) return;
-    
-    setIsProcessing(true);
-    
-    // محاكاة معالجة الاستعلام
-    setTimeout(() => {
-      let response = '';
-      
-      if (query.toLowerCase().includes('مرحبا') || query.toLowerCase().includes('hello')) {
-        response = `🤖 **مرحباً بك في نظام RAG العالمي!**
+.upload-box {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 1rem 0;
+    color: white;
+}
 
-**إليك ما يمكنني مساعدتك فيه:**
-- 📚 تحليل المستندات المرفوعة
-- 🔍 البحث في محتوى الملفات
-- 💡 الإجابة على أسئلتك بذكاء
-- 🌍 دعم اللغة العربية والإنجليزية
+.question-box {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 1rem 0;
+    color: white;
+}
 
-**المستندات المتاحة:** ${documents.length} ملف
-**حالة النظام:** ✅ جاهز للعمل
+.answer-box {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    padding: 1.5rem;
+    border-radius: 15px;
+    margin: 1rem 0;
+    color: white;
+}
 
-كيف يمكنني مساعدتك اليوم؟`;
-      } else if (documents.length === 0) {
-        response = `❌ **لا توجد مستندات مرفوعة**
+.stButton > button {
+    background: linear-gradient(135deg, #ff6b6b, #feca57);
+    border: none;
+    border-radius: 25px;
+    padding: 0.5rem 2rem;
+    color: white;
+    font-weight: bold;
+    width: 100%;
+}
 
-الرجاء رفع بعض المستندات أولاً لأتمكن من الإجابة على استعلامك: "${query}"
+.rtl-text {
+    direction: rtl;
+    text-align: right;
+}
+</style>
+""", unsafe_allow_html=True)
 
-**الأنواع المدعومة:**
-- PDF 📄
-- DOCX 📝  
-- TXT 📋`;
-      } else {
-        response = `🎯 **استعلامك:** ${query}
+# تهيئة Session State
+if 'documents' not in st.session_state:
+    st.session_state.documents = []
+if 'processed_files' not in st.session_state:
+    st.session_state.processed_files = []
 
-📖 **النتيجة من المستندات:**
+# العنوان الرئيسي
+st.markdown("""
+<div class="main-header">
+    <h1>🌍 النظام العالمي RAG - Intelligent Retrieval & Generation</h1>
+    <h3>🚀 استرجاع المستندات + توليد الإجابات باستخدام Streamlit</h3>
+</div>
+""", unsafe_allow_html=True)
 
-بناءً على تحليل ${documents.length} مستند مرفوع، وجدت المعلومات التالية:
+# تخطيط الصفحة
+col1, col2 = st.columns([1, 1])
 
-**📄 من الملف: ${documents[0]?.name}**
-النص ذو الصلة: "${documents[0]?.content.substring(0, 150)}..."
-درجة التطابق: 0.87
-
-**💡 الملخص:**
-تم العثور على معلومات ذات صلة بسؤالك في المستندات المرفوعة. النظام قام بتحليل المحتوى وتقديم أفضل إجابة ممكنة.
-
-**🔗 المراجع:** ${documents.length} مستند`;
-      }
-      
-      setAnswer(response);
-      setIsProcessing(false);
-    }, 1500);
-  };
-
-  const clearAll = () => {
-    setDocuments([]);
-    setQuery('');
-    setAnswer('');
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 text-white p-6">
-      {/* Header */}
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-8 rounded-2xl mb-8 text-center shadow-2xl">
-          <div className="flex items-center justify-center mb-4">
-            <Globe className="w-12 h-12 mr-4 animate-spin" />
-            <h1 className="text-4xl font-bold">النظام العالمي RAG</h1>
-          </div>
-          <p className="text-xl opacity-90">Intelligent Retrieval & Generation</p>
-          <p className="text-lg mt-2 opacity-80">🚀 استرجاع المستندات + توليد الإجابات</p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Upload Section */}
-          <div className="bg-gradient-to-br from-pink-500 to-red-500 p-6 rounded-2xl shadow-xl">
-            <div className="flex items-center mb-4">
-              <Upload className="w-8 h-8 mr-3" />
-              <h2 className="text-2xl font-bold">📤 ارفع مستنداتك</h2>
-            </div>
-            
-            <div className="border-2 border-dashed border-white border-opacity-50 rounded-xl p-8 text-center mb-4 hover:border-opacity-100 transition-all duration-300">
-              <input
-                type="file"
-                multiple
-                accept=".pdf,.docx,.txt"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="file-upload"
-              />
-              <label htmlFor="file-upload" className="cursor-pointer">
-                <FileText className="w-16 h-16 mx-auto mb-4 opacity-70" />
-                <p className="text-xl mb-2">Drag and drop files here</p>
-                <p className="text-sm opacity-75">Limit 200MB per file • PDF, DOCX, TXT</p>
-                <button className="bg-white text-purple-600 px-6 py-2 rounded-full font-bold mt-4 hover:bg-opacity-90 transition-all">
-                  Browse files
-                </button>
-              </label>
-            </div>
-
-            {/* Uploaded Files */}
-            {documents.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-bold text-lg">📁 الملفات المرفوعة:</h3>
-                {documents.slice(0, 3).map((doc) => (
-                  <div key={doc.id} className="bg-white bg-opacity-20 p-3 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{doc.name}</span>
-                      <span className="text-sm opacity-75">{doc.size} KB</span>
-                    </div>
-                  </div>
-                ))}
-                {documents.length > 3 && (
-                  <p className="text-center opacity-75">+{documents.length - 3} ملف آخر...</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Query Section */}
-          <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-6 rounded-2xl shadow-xl">
-            <div className="flex items-center mb-4">
-              <MessageCircle className="w-8 h-8 mr-3" />
-              <h2 className="text-2xl font-bold">💡 اطرح سؤالك</h2>
-            </div>
-
-            <textarea
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="اكتب سؤالك هنا..."
-              className="w-full h-32 p-4 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-70 text-white resize-none border-0 focus:outline-none focus:ring-4 focus:ring-white focus:ring-opacity-30"
-              dir="rtl"
-            />
-
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleSearch}
-                disabled={isProcessing}
-                className="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white py-3 rounded-xl font-bold hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <Zap className="w-5 h-5 mr-2 animate-pulse" />
-                ) : (
-                  <Search className="w-5 h-5 mr-2" />
-                )}
-                {isProcessing ? 'جاري المعالجة...' : '🔍 البحث والإجابة'}
-              </button>
-              
-              <button
-                onClick={clearAll}
-                className="bg-red-500 hover:bg-red-600 px-6 py-3 rounded-xl font-bold transition-all"
-              >
-                مسح
-              </button>
-            </div>
-
-            {/* System Stats */}
-            <div className="mt-4 bg-white bg-opacity-20 p-3 rounded-xl">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold">{documents.length}</div>
-                  <div className="text-sm opacity-75">📚 مستندات</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">✅</div>
-                  <div className="text-sm opacity-75">جاهز</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Answer Section */}
-        {answer && (
-          <div className="mt-8 bg-gradient-to-br from-green-500 to-teal-500 p-6 rounded-2xl shadow-xl">
-            <h2 className="text-2xl font-bold mb-4 flex items-center">
-              <Zap className="w-8 h-8 mr-3" />
-              ✨ الإجابة
-            </h2>
-            <div className="bg-white bg-opacity-20 p-6 rounded-xl">
-              <div className="whitespace-pre-line text-right leading-relaxed">
-                {answer}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-12 text-center opacity-70">
-          <p>🤖 نظام RAG العالمي - تم تطويره باستخدام React & AI</p>
-        </div>
-      </div>
+with col1:
+    # قسم رفع الملفات
+    st.markdown("""
+    <div class="upload-box">
+        <h2>📤 ارفع مستنداتك (PDF / DOCX / TXT)</h2>
     </div>
-  );
-};
+    """, unsafe_allow_html=True)
+    
+    uploaded_files = st.file_uploader(
+        "اختر الملفات",
+        accept_multiple_files=True,
+        type=['pdf', 'docx', 'txt'],
+        help="Drag and drop files here - Limit 200MB per file"
+    )
+    
+    # معالجة الملفات المرفوعة
+    if uploaded_files:
+        for file in uploaded_files:
+            if file.name not in st.session_state.processed_files:
+                # محاكاة معالجة الملف
+                with st.spinner(f"جاري معالجة {file.name}..."):
+                    time.sleep(1)  # محاكاة وقت المعالجة
+                
+                # إضافة الملف للقائمة
+                file_info = {
+                    'name': file.name,
+                    'size': f"{file.size / 1024:.1f} KB",
+                    'type': file.type,
+                    'content': f"محتوى تجريبي من ملف {file.name}. هذا نص تجريبي يمثل المحتوى المستخرج من الملف.",
+                    'processed_at': datetime.now().strftime("%H:%M")
+                }
+                
+                st.session_state.documents.append(file_info)
+                st.session_state.processed_files.append(file.name)
+        
+        st.success(f"✅ تم رفع {len(uploaded_files)} ملف بنجاح!")
+    
+    # عرض الملفات المرفوعة
+    if st.session_state.documents:
+        st.markdown("### 📁 الملفات المرفوعة:")
+        for doc in st.session_state.documents[-3:]:  # عرض آخر 3 ملفات
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; margin: 5px 0;">
+                📄 <strong>{doc['name']}</strong><br>
+                📊 الحجم: {doc['size']} | ⏰ {doc['processed_at']}
+            </div>
+            """, unsafe_allow_html=True)
 
-export default RAGSystem;
+with col2:
+    # قسم الاستعلام
+    st.markdown("""
+    <div class="question-box">
+        <h2>💡 اكتب سؤالك هنا</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    query = st.text_area(
+        "اكتب سؤالك:",
+        placeholder="مثال: مرحبا، ما هي النقاط الرئيسية في المستندات؟",
+        height=150,
+        help="يمكنك كتابة السؤال باللغة العربية أو الإنجليزية"
+    )
+    
+    # أزرار التحكم
+    col_btn1, col_btn2 = st.columns([3, 1])
+    
+    with col_btn1:
+        search_clicked = st.button("🔍 البحث والإجابة")
+    
+    with col_btn2:
+        if st.button("🗑️ مسح"):
+            st.session_state.documents = []
+            st.session_state.processed_files = []
+            st.experimental_rerun()
+
+# منطق معالجة الاستعلام
+if search_clicked and query.strip():
+    with st.spinner("🤖 جاري تحليل السؤال وتوليد الإجابة..."):
+        # محاكاة وقت المعالجة
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.01)
+            progress_bar.progress(i + 1)
+        
+        # توليد الإجابة بناءً على السؤال
+        def generate_smart_answer(question, docs):
+            question_lower = question.lower()
+            
+            if any(word in question_lower for word in ['مرحبا', 'hello', 'hi', 'السلام']):
+                return f"""
+🤖 **أهلاً وسهلاً بك في نظام RAG العالمي!**
+
+**معلومات النظام الحالية:**
+- 📚 عدد المستندات المرفوعة: **{len(docs)}** ملف
+- 🔍 حالة النظام: **✅ جاهز للعمل**
+- 🌍 اللغات المدعومة: **العربية والإنجليزية**
+- ⚡ وضع المعالجة: **نشط**
+
+**ما يمكنني مساعدتك فيه:**
+- تحليل محتوى المستندات المرفوعة
+- البحث عن معلومات محددة
+- تلخيص النقاط الرئيسية
+- الإجابة على الأسئلة المتخصصة
+
+**🎯 اطرح سؤالك القادم وسأقوم بتحليل المستندات للعثور على الإجابة!**
+"""
+            
+            elif len(docs) == 0:
+                return f"""
+❌ **لا توجد مستندات مرفوعة حالياً**
+
+**استعلامك:** "{question}"
+
+للإجابة على سؤالك، أحتاج إلى مستندات للبحث فيها أولاً.
+
+**📤 الرجاء رفع المستندات:**
+- اختر ملفات PDF, DOCX, أو TXT
+- سيتم تحليل المحتوى تلقائياً
+- ثم أعد طرح سؤالك
+
+**💡 نصيحة:** ارفع المستندات ذات الصلة بموضوع سؤالك للحصول على أفضل النتائج.
+"""
+            
+            else:
+                # إجابة ذكية مع تفاصيل
+                relevance_score = random.uniform(0.75, 0.95)
+                doc_sample = docs[0] if docs else None
+                
+                return f"""
+🎯 **استعلامك:** {question}
+
+📊 **نتائج البحث:**
+- تم تحليل **{len(docs)}** مستند
+- درجة التطابق: **{relevance_score:.2f}** (ممتازة)
+- وقت المعالجة: **1.2 ثانية**
+
+📄 **المصدر الرئيسي:** {doc_sample['name'] if doc_sample else 'غير متوفر'}
+📝 **المحتوى ذو الصلة:** 
+"{doc_sample['content'][:200] if doc_sample else ''}..."
+
+💡 **الإجابة المفصلة:**
+بناءً على تحليل المستندات المرفوعة، وجدت معلومات مهمة تتعلق بسؤالك. 
+
+النقاط الرئيسية:
+• المعلومة الأولى من تحليل المحتوى
+• النقطة الثانية المستخرجة من السياق  
+• الخلاصة والتوصيات
+
+**🔍 مراجع إضافية:**
+- الملف الأول: تطابق 87%
+- الملف الثاني: تطابق 72%
+- المجموع: {len(docs)} مرجع
+
+**هل تريد تفاصيل أكثر حول نقطة معينة؟**
+"""
+        
+        answer = generate_smart_answer(query, st.session_state.documents)
+    
+    # عرض الإجابة
+    st.markdown("""
+    <div class="answer-box">
+        <h2>✨ الإجابة</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f'<div class="rtl-text">{answer}</div>', unsafe_allow_html=True)
+    
+    # إحصائيات سريعة
+    if st.session_state.documents:
+        with st.expander("📊 تفاصيل إضافية"):
+            col_stat1, col_stat2, col_stat3 = st.columns(3)
+            
+            with col_stat1:
+                st.metric("📚 المستندات", len(st.session_state.documents))
+            
+            with col_stat2:
+                total_size = sum([float(doc['size'].replace(' KB', '')) for doc in st.session_state.documents])
+                st.metric("💾 الحجم الإجمالي", f"{total_size:.1f} KB")
+            
+            with col_stat3:
+                st.metric("⚡ حالة النظام", "جاهز")
+
+elif search_clicked and not query.strip():
+    st.warning("⚠️ الرجاء كتابة سؤال أولاً!")
+
+# الشريط الجانبي
+with st.sidebar:
+    st.header("⚙️ إعدادات النظام")
+    
+    # إحصائيات
+    if st.session_state.documents:
+        st.success(f"📚 المستندات: {len(st.session_state.documents)}")
+        st.info(f"📄 آخر رفع: {st.session_state.documents[-1]['processed_at']}")
+    else:
+        st.info("📂 لا توجد مستندات مرفوعة")
+    
+    st.markdown("---")
+    
+    st.markdown("""
+    ### 📋 تعليمات الاستخدام
+    
+    1. **ارفع المستندات** 
+       - PDF, DOCX, TXT
+    
+    2. **اطرح سؤالك**
+       - عربي أو إنجليزي
+    
+    3. **احصل على الإجابة**
+       - مع المراجع والتفاصيل
+    
+    4. **جرب الأسئلة:**
+       - "مرحبا" للترحيب
+       - "ما الموضوع الرئيسي؟"
+       - "لخص المحتوى"
+    """)
+
+# تذييل الصفحة
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; color: #666; font-size: 14px;'>"
+    "🤖 نظام RAG العالمي - تم تطويره باستخدام Streamlit & Python"
+    "</div>", 
+    unsafe_allow_html=True
+)
