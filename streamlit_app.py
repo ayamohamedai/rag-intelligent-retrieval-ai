@@ -206,7 +206,7 @@ const SmartRAGSystem = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="اكتب سؤالك هنا... مثلاً: لخص المحتوى الرئيسي أو ابحث عن معلومات حول موضوع معين"
-              className="w-full h-40 p-4 rounded-xl bg-white bg-opacity-15 placeholder-white placeholder-opacity-60 text-white resize-none border-2 border-white border-opacity-20 focus:outline-none focus:border-opacity-50 transition-all text-right"
+              className="w-full h-40 p-4 rounded-xl bg-white bg-opacity-15 placeholder-white placeholder-opacity-60 text-white resize-none border-2 border-white border-opacity-20 focus:outline-none focus:border-opacity-50 transition-all text-right font-medium"
             />
 
             <div className="flex gap-3 mt-6">
