@@ -1,426 +1,279 @@
-import streamlit as st
+# streamlit_app.py
+import os
 import time
+import logging
 from datetime import datetime
-import re
-import io
-import base64
+from io import BytesIO
 
-# إعداد الصفحة
+import streamlit as st
+
+# نصيحة: هذه الحزمة تُثبت عبر requirements.txt
+# استخراج PDF/docx
+import fitz  # PyMuPDF
+import docx2txt
+from pptx import Presentation
+from pptx.util import Inches, Pt
+from PIL import Image
+
+# -------------------- إعداد السجل --------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("global-rag")
+
+# -------------------- إعداد الصفحة --------------------
 st.set_page_config(
-    page_title="🤖 نظام RAG الذكي - تحليل حقيقي",
-    page_icon="🤖",
-    layout="wide"
+    page_title="🌍 نظام RAG العالمي — Intelligent Retrieval",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# دعم اللغة العربية
-st.markdown("""
+# CSS خفيف للواجهه (RTL + خطوط)
+st.markdown(
+    """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;700&display=swap');
-    
-    .main {
-        direction: rtl;
-        text-align: right;
-        font-family: 'Noto Sans Arabic', sans-serif;
-    }
-    
-    .stTextInput > div > div > input {
-        direction: rtl;
-        text-align: right;
-    }
-    
-    .stTextArea > div > div > textarea {
-        direction: rtl;
-        text-align: right;
-        font-family: 'Noto Sans Arabic', sans-serif;
-    }
-    
-    h1, h2, h3 {
-        font-family: 'Noto Sans Arabic', sans-serif;
-        direction: rtl;
-        text-align: right;
-    }
-    
-    .real-content {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
-        color: white;
-        margin: 1rem 0;
-        border-right: 5px solid #FF5722;
-    }
-    
-    .file-content {
-        background: #f0f2f6;
-        color: #333;
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid #ddd;
-    }
-    
-    .search-result {
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-        margin: 0.5rem 0;
-        border-left: 4px solid #2E7D32;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+    html, body, [class*="css"]  { font-family: 'Cairo', sans-serif; }
+    .main-header { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color: white;
+        padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1rem; }
+    .file-content { background:#f7f8fc; padding:0.75rem; border-radius:8px; border:1px solid #e3e7f3; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# تهيئة البيانات
-if 'files_content' not in st.session_state:
-    st.session_state.files_content = {}
+st.markdown('<div class="main-header"><h1>🌍 نظام RAG العالمي — Intelligent Retrieval</h1></div>', unsafe_allow_html=True)
 
-if 'processed_files' not in st.session_state:
-    st.session_state.processed_files = []
+# -------------------- إعداد state --------------------
+if "files" not in st.session_state:
+    st.session_state["files"] = {}  # name -> extracted_text
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
 
-if 'test_counter' not in st.session_state:
-    st.session_state.test_counter = 0
-
-if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = []
-
-def extract_text_from_file(file):
-    """استخراج النص الحقيقي من الملفات"""
+# -------------------- أدوات مساعدة --------------------
+def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
+    """استخراج نص من PDF باستخدام PyMuPDF. يعيد نصًا مُجمَّعًا."""
     try:
-        file_content = ""
-        file_type = file.type
-        
-        if file_type == "text/plain":
-            # قراءة ملفات TXT
-            content = file.read()
-            if isinstance(content, bytes):
-                # جرب عدة encodings
-                for encoding in ['utf-8', 'cp1256', 'iso-8859-1', 'windows-1256']:
-                    try:
-                        file_content = content.decode(encoding)
-                        break
-                    except:
-                        continue
-                if not file_content:
-                    file_content = content.decode('utf-8', errors='ignore')
-            else:
-                file_content = str(content)
-        
-        elif file_type == "application/pdf":
-            # محاولة استخراج نص بسيط من PDF
-            content = file.read()
-            file_content = f"ملف PDF: {file.name}\n"
-            file_content += f"حجم الملف: {len(content)} بايت\n"
-            file_content += "ملاحظة: لقراءة PDF بشكل كامل، يحتاج مكتبات إضافية.\n"
-            # محاولة بسيطة لاستخراج نص من PDF
-            text = content.decode('latin-1', errors='ignore')
-            words = re.findall(r'[a-zA-Zأ-ي\u0600-\u06FF]{3,}', text)
-            if words:
-                file_content += f"كلمات مستخرجة: {' '.join(words[:50])}"
-        
-        elif file_type in ["application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-                          "application/msword"]:
-            # ملفات DOCX/DOC
-            file_content = f"ملف Word: {file.name}\n"
-            file_content += f"حجم الملف: {file.size} بايت\n"
-            file_content += "ملاحظة: لقراءة ملفات Word بشكل كامل، يحتاج مكتبات إضافية.\n"
-        
-        else:
-            # أنواع أخرى
-            try:
-                content = file.read()
-                if isinstance(content, bytes):
-                    file_content = content.decode('utf-8', errors='ignore')
-                else:
-                    file_content = str(content)
-            except:
-                file_content = f"ملف {file.name} - نوع غير مدعوم للقراءة المباشرة"
-        
-        return file_content.strip()
-    
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     except Exception as e:
-        return f"خطأ في قراءة الملف {file.name}: {str(e)}"
+        logger.exception("PyMuPDF failed to open PDF")
+        return ""
+    texts = []
+    for page in doc:
+        try:
+            txt = page.get_text("text")
+            if txt and txt.strip():
+                texts.append(txt.strip())
+            else:
+                # fallback: صورة لِلصفحة كـ snapshot ثم OCR يمكن إضافته لاحقاً
+                pix = page.get_pixmap(dpi=150)
+                try:
+                    img = Image.open(BytesIO(pix.tobytes("png")))
+                    # no OCR here by default (keeps complexity low) — يمكن إضافة pytesseract لاحقًا
+                    # placeholder text
+                    texts.append("") 
+                except Exception:
+                    texts.append("")
+        except Exception:
+            texts.append("")
+    return "\n\n".join(t for t in texts if t)
 
-def search_in_content(query, files_content):
-    """البحث الحقيقي في محتوى الملفات"""
-    results = []
-    query_words = query.lower().split()
-    
-    for filename, content in files_content.items():
-        if not content:
+def extract_text_from_docx_bytes(file_bytes: bytes) -> str:
+    """استخرج نص من DOCX عبر docx2txt (يحتاج حفظ مؤقت)."""
+    try:
+        tmp = "tmp_docx_" + datetime.now().strftime("%Y%m%d%H%M%S") + ".docx"
+        with open(tmp, "wb") as f:
+            f.write(file_bytes)
+        text = docx2txt.process(tmp) or ""
+        try:
+            os.remove(tmp)
+        except Exception:
+            pass
+        return text
+    except Exception:
+        logger.exception("docx extraction failed")
+        return ""
+
+def extract_text_from_txt_bytes(file_bytes: bytes) -> str:
+    """محاولة قراءة TXT بعدة encodings."""
+    for enc in ("utf-8", "cp1256", "iso-8859-1", "windows-1256"):
+        try:
+            return file_bytes.decode(enc)
+        except Exception:
             continue
-        
-        content_lower = content.lower()
-        
-        # حساب درجة التطابق
-        matches = 0
-        matched_sentences = []
-        
-        # تقسيم المحتوى لجمل
-        sentences = re.split(r'[.!?؟।\n]+', content)
-        
-        for sentence in sentences:
-            sentence_lower = sentence.lower().strip()
-            if len(sentence_lower) < 10:  # تجاهل الجمل القصيرة جداً
-                continue
-            
-            sentence_matches = 0
-            for word in query_words:
-                if word in sentence_lower:
-                    sentence_matches += 1
-            
-            if sentence_matches > 0:
-                matches += sentence_matches
-                matched_sentences.append({
-                    'sentence': sentence.strip(),
-                    'matches': sentence_matches
-                })
-        
-        if matches > 0:
-            # ترتيب الجمل حسب عدد التطابقات
-            matched_sentences.sort(key=lambda x: x['matches'], reverse=True)
-            
-            results.append({
-                'filename': filename,
-                'total_matches': matches,
-                'sentences': matched_sentences[:3],  # أفضل 3 جمل
-                'content_preview': content[:300] + "..." if len(content) > 300 else content
-            })
-    
-    # ترتيب النتائج حسب عدد التطابقات
-    results.sort(key=lambda x: x['total_matches'], reverse=True)
-    return results
+    return file_bytes.decode("utf-8", errors="ignore")
 
-def generate_real_answer(question, files_content):
-    """توليد إجابة حقيقية بناءً على محتوى الملفات"""
-    question_lower = question.lower().strip()
-    
-    # تحية
-    if any(word in question_lower for word in ['مرحب', 'هلا', 'سلام', 'أهلا']):
-        return f"""🤖 **مرحباً بك في نظام RAG الحقيقي!**
+def generate_answer_from_local_content(question: str, contents: dict) -> str:
+    """محرك بسيط للرد يعتمد على البحث بالكلمات المفتاحية داخل النصوص."""
+    q = question.lower().strip()
+    if not contents:
+        return "❌ لا توجد ملفات محللة. ارفع ملفات (TXT أفضل) ثم اضغط تحليل."
 
-✨ **حالة النظام:**
-- الملفات المحللة: {len(files_content)} ملف
-- إجمالي المحتوى: {sum(len(content) for content in files_content.values())} حرف
-- الوقت: {datetime.now().strftime("%H:%M:%S")}
-
-📁 **الملفات المتاحة:**
-{chr(10).join([f"• {filename} ({len(content)} حرف)" for filename, content in files_content.items()])}
-
-🎯 **يمكنني الآن:**
-• البحث في المحتوى الحقيقي للملفات
-• استخراج معلومات دقيقة
-• تلخيص المحتوى الفعلي
-• الإجابة بناءً على البيانات الموجودة
-
-**اسأل أي سؤال عن محتوى ملفاتك! 🚀**"""
-    
-    # إذا لا توجد ملفات
-    if not files_content:
-        return """❌ **لا توجد ملفات محللة للبحث فيها**
-
-📤 **الحل:**
-1. ارفع ملفات نصية (TXT مضمون)
-2. انتظر رسالة "تم التحليل"
-3. أعد طرح سؤالك
-
-💡 **نصيحة:** ملفات TXT تعطي أفضل النتائج"""
-    
-    # أسئلة التلخيص
-    if any(word in question_lower for word in ['لخص', 'تلخيص', 'خلاصة', 'ملخص']):
-        summary = "📋 **ملخص المحتوى الحقيقي:**\n\n"
-        
-        for filename, content in files_content.items():
-            if len(content) > 50:  # تجاهل المحتوى القصير جداً
-                # استخراج أول 3 جمل مهمة
-                sentences = [s.strip() for s in re.split(r'[.!?؟।\n]+', content) if len(s.strip()) > 20]
-                top_sentences = sentences[:3] if sentences else ["لا يوجد محتوى كافي"]
-                
-                summary += f"**📄 من ملف {filename}:**\n"
-                for i, sentence in enumerate(top_sentences, 1):
-                    summary += f"{i}. {sentence}\n"
-                summary += "\n"
-        
+    # تحية أو أوامر بسيطة
+    greetings = ["مرحب", "هلا", "السلام", "أهلا"]
+    if any(g in q for g in greetings):
+        summary = f"🤖 مرحباً! عندي {len(contents)} ملف محلل.\n\n"
+        for name, text in contents.items():
+            summary += f"• {name}: {len(text)} حرف\n"
         return summary
-    
-    # أسئلة عن المحتوى
-    if any(word in question_lower for word in ['محتوى', 'موجود', 'مكتوب', 'نص']):
-        content_info = "📖 **محتوى الملفات الحقيقي:**\n\n"
-        
-        for filename, content in files_content.items():
-            content_info += f"**📄 ملف: {filename}**\n"
-            content_info += f"• عدد الأحرف: {len(content)}\n"
-            content_info += f"• عدد الكلمات: {len(content.split())}\n"
-            
-            if content:
-                # عرض أول 200 حرف من المحتوى الفعلي
-                preview = content[:200] + "..." if len(content) > 200 else content
-                content_info += f"• معاينة: {preview}\n\n"
-            else:
-                content_info += "• المحتوى فارغ أو لا يمكن قراءته\n\n"
-        
-        return content_info
-    
-    # البحث العام
-    search_results = search_in_content(question, files_content)
-    
-    if search_results:
-        answer = f"🔍 **نتائج البحث الحقيقي عن:** \"{question}\"\n\n"
-        
-        for result in search_results[:2]:  # أفضل نتيجتين
-            answer += f"📄 **من ملف: {result['filename']}**\n"
-            answer += f"• عدد التطابقات: {result['total_matches']}\n\n"
-            
-            answer += "**الجمل المطابقة:**\n"
-            for i, sent_data in enumerate(result['sentences'], 1):
-                answer += f"{i}. {sent_data['sentence']}\n"
-            
-            answer += f"\n**معاينة المحتوى:**\n{result['content_preview']}\n\n"
-            answer += "---\n"
-        
-        return answer
-    else:
-        return f"""🔍 **البحث عن:** "{question}"
 
-❌ **لم أجد تطابقات مباشرة**
+    # تلخيص مبسط: أول 2 جمل من كل ملف
+    if any(k in q for k in ["لخص", "ملخص", "تلخيص", "خلاصة"]):
+        out = "📋 ملخصات سريعة:\n\n"
+        import re
+        for name, text in contents.items():
+            sents = [s.strip() for s in re.split(r'[.!؟?\n]+', text) if len(s.strip()) > 20]
+            top = sents[:2] if sents else ["لا يوجد محتوى كافٍ للملخص"]
+            out += f"★ {name}:\n"
+            for i, t in enumerate(top, 1):
+                out += f"  {i}. {t}\n"
+            out += "\n"
+        return out
 
-📊 **ما بحثت فيه:**
-{chr(10).join([f"• {filename} ({len(content)} حرف)" for filename, content in files_content.items()])}
+    # بحث بسيط بالكلمات
+    words = [w for w in q.split() if len(w) > 2]
+    results = []
+    for name, text in contents.items():
+        lower = text.lower()
+        score = sum(lower.count(w) for w in words)
+        if score:
+            # نرسل أوائل الجمل المطابقة
+            import re
+            sents = [s.strip() for s in re.split(r'[.!؟?\n]+', text) if len(s.strip()) > 10]
+            matched = [s for s in sents if any(w in s.lower() for w in words)]
+            results.append((score, name, matched[:3], text[:400]))
+    if not results:
+        return f"🔍 لم أجد تطابق واضح للسؤال: «{question}»\n\nاقتراح: جرب كلمات مفتاحية أبسط أو اطرح 'ما المحتوى؟' لعرض معاينة."
 
-💡 **اقتراحات:**
-- جرب كلمات أخرى
-- اسأل "ما المحتوى؟" لرؤية النصوص
-- اسأل "لخص الملفات" لملخص شامل"""
+    results.sort(reverse=True)
+    out = f"🔍 نتائج البحث عن «{question}» — أفضل المصادر:\n\n"
+    for score, name, matched, preview in results[:3]:
+        out += f"📄 {name} — صلة: {score}\n"
+        if matched:
+            for i, m in enumerate(matched, 1):
+                out += f"  {i}. {m}\n"
+        out += f"— معاينة:\n{preview}\n\n---\n\n"
+    return out
 
-def main():
-    # العنوان
-    st.title("🤖 نظام RAG الذكي - تحليل حقيقي")
-    st.markdown("### 📚 تحليل حقيقي لمحتوى الملفات!")
-    
-    # الشريط الجانبي
-    with st.sidebar:
-        st.header("⚙️ لوحة التحكم")
-        
-        # اختبار
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("➕"):
-                st.session_state.test_counter += 1
-        with col2:
-            if st.button("➖"):
-                st.session_state.test_counter -= 1
-        
-        st.metric("🔢 العداد", st.session_state.test_counter)
-        
-        # إحصائيات
-        st.subheader("📊 إحصائيات حقيقية")
-        total_chars = sum(len(content) for content in st.session_state.files_content.values())
-        st.metric("📁 ملفات محللة", len(st.session_state.files_content))
-        st.metric("📝 إجمالي الأحرف", total_chars)
-        st.metric("💬 الأسئلة", len(st.session_state.chat_history))
-        
-        # مسح
-        if st.button("🗑️ مسح كل شيء"):
-            st.session_state.files_content = {}
-            st.session_state.processed_files = []
-            st.session_state.chat_history = []
-            st.success("تم المسح!")
-            st.rerun()
-    
-    # رفع الملفات
-    st.header("📁 رفع وتحليل الملفات")
-    
-    uploaded_files = st.file_uploader(
-        "اختر ملفات نصية (TXT مضمون أكثر)",
-        type=['txt', 'pdf', 'docx'],
-        accept_multiple_files=True,
-        help="ملفات TXT تعطي أفضل النتائج"
-    )
-    
-    if uploaded_files:
-        if st.button("🔄 تحليل حقيقي للملفات", type="primary"):
-            progress = st.progress(0)
-            
-            for i, file in enumerate(uploaded_files):
-                progress.progress((i + 1) / len(uploaded_files))
-                
-                with st.spinner(f"جاري تحليل {file.name}..."):
-                    # استخراج المحتوى الحقيقي
-                    real_content = extract_text_from_file(file)
-                    st.session_state.files_content[file.name] = real_content
-                    
-                    time.sleep(0.2)  # لإظهار التقدم
-            
-            st.success("✅ تم التحليل الحقيقي بنجاح!")
-            st.rerun()
-    
-    # عرض الملفات المحللة
-    if st.session_state.files_content:
-        st.header("📋 الملفات المحللة (المحتوى الحقيقي)")
-        
-        for filename, content in st.session_state.files_content.items():
-            with st.expander(f"📄 {filename} ({len(content)} حرف)"):
-                if content and len(content) > 50:
-                    st.markdown(f'<div class="file-content">{content[:500]}{"..." if len(content) > 500 else ""}</div>', 
-                               unsafe_allow_html=True)
-                    
-                    if len(content) > 500:
-                        if st.button(f"عرض كامل لـ {filename}", key=f"full_{filename}"):
-                            st.text_area("المحتوى الكامل:", content, height=200, key=f"content_{filename}")
+def pdf_to_pptx_bytes_from_fileobj(fileobj, title=None, max_chars=1200):
+    """تحويل PDF (bytes) إلى PPTX (BytesIO). بسيط، صفحة -> شريحة."""
+    try:
+        pdf_bytes = fileobj.read() if hasattr(fileobj, "read") else fileobj
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception:
+        raise
+
+    prs = Presentation()
+    # غلاف
+    slide = prs.slides.add_slide(prs.slide_layouts[0])
+    slide.shapes.title.text = title or "Converted PDF"
+
+    for i, page in enumerate(doc):
+        text = page.get_text("text") or ""
+        # create slide
+        slide = prs.slides.add_slide(prs.slide_layouts[1])
+        slide.shapes.title.text = f"صفحة {i+1}"
+        tf = slide.placeholders[1].text_frame
+        snippet = text.strip()
+        if len(snippet) > max_chars:
+            snippet = snippet[:max_chars].rsplit("\n", 1)[0] + "\n\n…"
+        tf.clear()
+        p = tf.add_paragraph()
+        p.text = snippet
+        p.font.size = Pt(14)
+        # صورة snapshot للصفحة على اليمين
+        try:
+            pix = page.get_pixmap(dpi=130)
+            img_bytes = pix.tobytes("png")
+            img_io = BytesIO(img_bytes)
+            slide.shapes.add_picture(img_io, Inches(5), Inches(1.2), width=Inches(4))
+        except Exception:
+            pass
+
+    out = BytesIO()
+    prs.save(out)
+    out.seek(0)
+    return out
+
+# -------------------- الواجهة --------------------
+st.sidebar.header("⚙️ الإعدادات والاختصارات")
+st.sidebar.markdown("**ملحوظة:** رفع ملفات TXT يعطي أفضل نتائج، PDF/DOCX تُعالج لكن قد تحتاج مراجعة.")
+
+# رفع الملفات
+st.header("📁 رفع الملفات والتحليل")
+uploaded = st.file_uploader("اسحب وأفلت ملفات (txt, pdf, docx) — ارفع واحد أو أكثر", accept_multiple_files=True,
+                            type=["txt", "pdf", "docx"])
+
+# زر التحليل
+if uploaded:
+    if st.button("🔄 تحليل الملفات الآن", type="primary"):
+        progress = st.progress(0)
+        total = len(uploaded)
+        for idx, f in enumerate(uploaded, start=1):
+            try:
+                raw = f.read()
+                fname = f.name
+                # نوع الملف
+                if fname.lower().endswith(".pdf"):
+                    text = extract_text_from_pdf_bytes(raw)
+                elif fname.lower().endswith(".docx"):
+                    text = extract_text_from_docx_bytes(raw)
                 else:
-                    st.warning("المحتوى فارغ أو لا يمكن قراءته")
-    
-    # الأسئلة
-    if st.session_state.files_content:
-        st.header("💬 اسأل عن المحتوى الحقيقي")
-        
-        # أسئلة سريعة
-        quick_questions = ["مرحبا", "لخص الملفات", "ما المحتوى؟", "ابحث في النصوص"]
-        cols = st.columns(len(quick_questions))
-        for i, q in enumerate(quick_questions):
-            with cols[i]:
-                if st.button(q, key=f"q_{i}"):
-                    st.session_state.selected_q = q
-        
-        # السؤال
-        user_question = st.text_area(
-            "اكتب سؤالك عن المحتوى:",
-            value=st.session_state.get('selected_q', ''),
-            placeholder="مثال: ابحث عن كلمة معينة، لخص الملف الأول، ما المكتوب عن الموضوع..."
-        )
-        
-        if st.button("🔍 بحث حقيقي", type="primary"):
-            if user_question.strip():
-                with st.spinner("جاري البحث في المحتوى الحقيقي..."):
-                    time.sleep(0.5)
-                    
-                    # إجابة حقيقية
-                    real_answer = generate_real_answer(user_question, st.session_state.files_content)
-                    
-                    # حفظ
-                    st.session_state.chat_history.append({
-                        "question": user_question,
-                        "answer": real_answer,
-                        "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
-                    
-                    # عرض الإجابة
-                    st.markdown(f'<div class="real-content">{real_answer}</div>', 
-                               unsafe_allow_html=True)
-            else:
-                st.warning("اكتب سؤالاً!")
-    else:
-        st.info("ارفع ملفات أولاً للحصول على تحليل حقيقي")
-    
-    # التاريخ
-    if st.session_state.chat_history:
-        st.header("📜 سجل الأسئلة والإجابات الحقيقية")
-        
-        for i, chat in enumerate(reversed(st.session_state.chat_history[-3:]), 1):
-            with st.expander(f"💬 {chat['question'][:40]}... ({chat['timestamp']})"):
-                st.markdown(f"**❓ السؤال:** {chat['question']}")
-                st.markdown("**📖 الإجابة الحقيقية:**")
-                st.markdown(chat['answer'])
+                    text = extract_text_from_txt_bytes(raw)
+                # sanitize length
+                if not text:
+                    # fallback message
+                    text = f"[لا يمكن استخراج نص كامل من {fname} — قد تكون صفحات ممسوحة أو بحاجة OCR]"
+                st.session_state["files"][fname] = text
+                st.success(f"✓ تم تحليل {fname}")
+            except Exception as e:
+                logger.exception("file processing error")
+                st.error(f"✖ فشل تحليل {f.name}: {e}")
+            progress.progress(int(idx / total * 100))
+        st.experimental_rerun()
 
-if __name__ == "__main__":
-    main()
+# عرض الملفات المحللة
+if st.session_state["files"]:
+    st.subheader("📋 الملفات المحللة")
+    for name, txt in st.session_state["files"].items():
+        st.markdown(f"**{name}** — {len(txt)} حرف")
+        st.markdown(f'<div class="file-content">{txt[:800]}{"..." if len(txt)>800 else ""}</div>', unsafe_allow_html=True)
+        # زر تحويل إلى PPTX لكل ملف PDF
+        if name.lower().endswith(".pdf"):
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                if st.button(f"⬇️ تحويل {name} → PPTX", key=f"ppt_{name}"):
+                    with st.spinner("⏳ جاري بناء PowerPoint ..."):
+                        # إعادة فتح الملف bytes: نبحث في uploaded list for matching name
+                        for u in uploaded:
+                            if u.name == name:
+                                out_io = pdf_to_pptx_bytes_from_fileobj(u, title=name)
+                                st.download_button("تحميل PPTX", data=out_io.getvalue(),
+                                                   file_name=name.rsplit(".",1)[0]+".pptx",
+                                                   mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+                                break
+
+# واجهة الأسئلة
+st.header("💬 اسأل عن المحتوى")
+question = st.text_input("اكتب سؤالك هنا (مثال: لخص الملفات أو ابحث عن كلمة):")
+if st.button("🔍 بحث"):
+    if not question.strip():
+        st.warning("✳ اكتب سؤالاً أولاً")
+    else:
+        with st.spinner("🔎 جاري البحث والإجابة..."):
+            answer = generate_answer_from_local_content(question, st.session_state["files"])
+            st.session_state["chat_history"].append({"q": question, "a": answer, "t": datetime.now().strftime("%H:%M:%S")})
+            st.markdown(f"<div class='file-content'>{answer}</div>", unsafe_allow_html=True)
+
+# سجل الأسئلة
+if st.session_state["chat_history"]:
+    st.subheader("📝 سجل الأسئلة الأخيرة")
+    for item in reversed(st.session_state["chat_history"][-6:]):
+        st.markdown(f"**{item['t']} — {item['q']}**")
+        st.markdown(f"{item['a']}")
+
+# زر تنظيف الجلسة
+if st.button("🧹 إعادة ضبط الجلسة"):
+    st.session_state["files"] = {}
+    st.session_state["chat_history"] = []
+    st.success("تمت إعادة الضبط")
+    st.experimental_rerun()
