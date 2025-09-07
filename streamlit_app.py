@@ -1,5 +1,4 @@
 import streamlit as st
-import tempfile
 import os
 import pandas as pd
 from PyPDF2 import PdfReader
@@ -12,6 +11,11 @@ load_dotenv()
 
 # قراءة المفتاح من secrets أو .env
 api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+
+if not api_key:
+    st.error("❌ مفيش مفتاح OpenAI API متسجل. ضيفه في .env أو Streamlit Secrets")
+    st.stop()
+
 client = OpenAI(api_key=api_key)
 
 st.set_page_config(page_title="Global Intelligent File Assistant", layout="wide")
@@ -28,7 +32,7 @@ user_question = st.text_input("💡 اكتب سؤالك أو اطلب شرح/ت�
 # 🗂️ دوال استخراج النصوص
 def extract_text_from_pdf(file):
     reader = PdfReader(file)
-    return "\n".join([page.extract_text() for page in reader.pages])
+    return "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
 
 def extract_text_from_docx(file):
     doc = docx.Document(file)
