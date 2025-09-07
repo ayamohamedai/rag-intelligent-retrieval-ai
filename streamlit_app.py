@@ -9,14 +9,14 @@ from dotenv import load_dotenv
 # تحميل متغيرات البيئة
 load_dotenv()
 
-# قراءة المفتاح من secrets أو .env
+# نحاول نقرأ الـ API Key
 api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
 if not api_key:
-    st.error("❌ مفيش مفتاح OpenAI API متسجل. ضيفه في .env أو Streamlit Secrets")
-    st.stop()
-
-client = OpenAI(api_key=api_key)
+    st.warning("⚠️ مفيش مفتاح OpenAI API متسجل. هتشتغل بس بالوظايف المحلية (قراءة + تقسيم الملفات) من غير ذكاء صناعي.")
+    client = None
+else:
+    client = OpenAI(api_key=api_key)
 
 st.set_page_config(page_title="Global Intelligent File Assistant", layout="wide")
 st.title("🌍 Global Intelligent File Assistant")
@@ -45,8 +45,10 @@ def extract_text_from_excel(file):
     df = pd.read_excel(file)
     return df.to_string()
 
-# 🤖 دالة توليد الإجابة
+# 🤖 دالة توليد الإجابة بالذكاء الصناعي
 def expand_with_ai(text, task="شرح بالتفصيل"):
+    if not client:
+        return "⚠️ الذكاء الصناعي متوقف دلوقتي (مفيش API Key). تقدر تستعرض النصوص فقط."
     prompt = f"""
     النص التالي:
     {text[:2000]}
