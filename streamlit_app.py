@@ -663,23 +663,26 @@ def fallback_sentences_from_text(text: str) -> List[str]:
 
 def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_per_doc: int = 3):
     """ترتيب الجمل حسب الأهمية مع تحسينات للعربية"""
-    try:
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        
-        all_sentences = []
-        doc_mapping = []
-        
-       # ================================================
-# معالجة المستندات قبل بناء الـ FAISS/Chroma Index
-# ================================================
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
 
-processed_docs = []
+    all_sentences = []
+    doc_mapping = []
 
-for i, doc in enumerate(document_texts):
-    clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
-    doc_id = f"doc_{i}"
-    processed_docs.append({
-        "id": doc_id,
-        "text": clean_doc
-    })
-    print(f"[RAG] Processed document {doc_id}")
+    # ================================================
+    # معالجة المستندات قبل بناء الـ FAISS/Chroma Index
+    # ================================================
+
+    processed_docs = []
+
+    for i, doc in enumerate(document_texts):
+        clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
+        doc_id = f"doc_{i}"
+        processed_docs.append({
+            "id": doc_id,
+            "text": clean_doc
+        })
+        print(f"[RAG] Processed document {doc_id}")
+
+except Exception as e:
+    st.error(f"Error processing documents: {e}")
