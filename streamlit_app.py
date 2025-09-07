@@ -664,15 +664,6 @@ def fallback_sentences_from_text(text: str) -> List[str]:
 def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_per_doc: int = 3):
     """ترتيب الجمل حسب الأهمية مع تحسينات للعربية"""
 try:
-    from sklearn.feature_extraction.text import TfidfVectorizer
-
-    all_sentences = []
-    doc_mapping = []
-
-    # ================================================
-    # معالجة المستندات قبل بناء الـ FAISS/Chroma Index
-    # ================================================
-
     processed_docs = []
 
     for i, doc in enumerate(document_texts):
