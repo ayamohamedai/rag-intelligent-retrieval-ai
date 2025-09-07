@@ -1,6 +1,9 @@
-echo "__pycache__/
-*.pyc
-venv/
 .env
-.streamlit/
-uploads/" > .gitignore
+.venv/
+__pycache__/
+*.pyc
+tmp_*.docx
+*.pptx
+*.docx
+*.sqlite
+.DS_Store
