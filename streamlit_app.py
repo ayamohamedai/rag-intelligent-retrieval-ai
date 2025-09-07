@@ -639,6 +639,12 @@ def fallback_chunk_text(text: str, chunk_size: int = 300, overlap: int = 50) -> 
     
     return [chunk for chunk in chunks if len(chunk.strip()) > 20]
 
+from typing import List, Dict, Any
+import streamlit as st
+import re
+from collections import Counter
+import math
+
 def fallback_sentences_from_text(text: str) -> List[str]:
     """تقسيم النص لجمل مع مراعاة اللغة العربية"""
     if not text:
@@ -657,16 +663,116 @@ def fallback_sentences_from_text(text: str) -> List[str]:
         text = text.replace('!', '!\n') 
         text = text.replace('.', '.\n')
         text = text.replace('؛', '؛\n')
+        text = text.replace(':', ':\n')  # إضافة النقطتين
+        text = text.replace('،', '،\n')  # الفاصلة العربية للجمل الطويلة
         
         sentences = [s.strip() for s in text.split('\n') if s.strip()]
         return [s for s in sentences if len(s.strip()) > 15]
 
-def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_per_doc: int = 3):
+def clean_arabic_text(text: str) -> str:
+    """تنظيف النص العربي"""
+    if not text:
+        return ""
+    
+    # إزالة التشكيل
+    text = re.sub(r'[ًٌٍَُِّْ]', '', text)
+    
+    # توحيد الأحرف المتشابهة
+    text = text.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
+    text = text.replace('ة', 'ه')
+    text = text.replace('ى', 'ي')
+    
+    # إزالة الأرقام والرموز غير المرغوبة
+    text = re.sub(r'[0-9]+', '', text)
+    text = re.sub(r'[^\u0600-\u06FF\s]', ' ', text)
+    
+    # إزالة المسافات الزائدة
+    text = ' '.join(text.split())
+    
+    return text.strip()
+
+def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_per_doc: int = 3) -> Dict[str, List[Dict]]:
     """ترتيب الجمل حسب الأهمية مع تحسينات للعربية"""
+    if not document_texts:
+        return {}
+    
+    try:
+        # جمع كل الجمل من كل الوثائق
+        all_sentences = []
+        doc_sentence_map = {}
+        
+        for doc_idx, doc_text in enumerate(document_texts):
+            sentences = fallback_sentences_from_text(doc_text)
+            doc_id = f"doc_{doc_idx + 1}"
+            doc_sentence_map[doc_id] = sentences
+            all_sentences.extend(sentences)
+        
+        if not all_sentences:
+            return {}
+        
+        # حساب TF-IDF بسيط
+        # 1. حساب تكرار الكلمات
+        word_doc_count = Counter()
+        sentence_word_counts = []
+        
+        for sentence in all_sentences:
+            clean_sentence = clean_arabic_text(sentence)
+            words = clean_sentence.split()
+            word_count = Counter(words)
+            sentence_word_counts.append(word_count)
+            
+            # حساب عدد الوثائق التي تحتوي على كل كلمة
+            for word in set(words):
+                if len(word) > 2:  # تجاهل الكلمات القصيرة
+                    word_doc_count[word] += 1
+        
+        # 2. حساب نقاط TF-IDF للجمل
+        sentence_scores = []
+        total_docs = len(all_sentences)
+        
+        for word_count in sentence_word_counts:
+            score = 0
+            total_words = sum(word_count.values())
+            
+            if total_words > 0:
+                for word, count in word_count.items():
+                    if len(word) > 2 and word_doc_count[word] > 0:
+                        tf = count / total_words
+                        idf = math.log(total_docs / word_doc_count[word])
+                        score += tf * idf
+            
+            sentence_scores.append(score)
+        
+        # 3. ترتيب الجمل لكل وثيقة
+        results = {}
+        sentence_idx = 0
+        
+        for doc_id, sentences in doc_sentence_map.items():
+            doc_sentences_with_scores = []
+            
+            for sentence in sentences:
+                if sentence_idx < len(sentence_scores):
+                    doc_sentences_with_scores.append({
+                        'text': sentence,
+                        'score': sentence_scores[sentence_idx],
+                        'length': len(sentence)
+                    })
+                sentence_idx += 1
+            
+            # ترتيب حسب النقاط
+            doc_sentences_with_scores.sort(key=lambda x: x['score'], reverse=True)
+            
+            # أخذ أفضل الجمل
+            results[doc_id] = doc_sentences_with_scores[:top_k_sentences_per_doc]
+        
+        return results
+    
+    except Exception as e:
+        st.error(f"خطأ في ترتيب الجمل: {e}")
+        return {}
+
 def process_documents(documents_list=None):
-    """
-    معالجة قائمة الوثائق وتنظيفها
-    """
+    """معالجة قائمة الوثائق وتنظيفها"""
     try:
         # استخدام المتغير المُمرر أو البحث عن document_texts
         if documents_list is None:
@@ -688,24 +794,120 @@ def process_documents(documents_list=None):
         for i, doc in enumerate(documents_list):
             # تنظيف النص
             clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
+            clean_doc = clean_arabic_text(clean_doc)  # تنظيف النص العربي
             doc_id = f"doc_{i+1}"
+            
+            # تقسيم إلى جمل
+            sentences = fallback_sentences_from_text(doc)
             
             processed_docs.append({
                 "id": doc_id,
                 "text": clean_doc,
-                "length": len(clean_doc)
+                "original_text": doc,
+                "sentences": sentences,
+                "length": len(clean_doc),
+                "sentence_count": len(sentences)
             })
             
             # تحديث شريط التقدم
             progress_bar.progress((i + 1) / len(documents_list))
-            st.write(f"✅ تم معالجة الوثيقة {doc_id} - الطول: {len(clean_doc)} حرف")
+            st.write(f"✅ تم معالجة الوثيقة {doc_id} - الطول: {len(clean_doc)} حرف - الجمل: {len(sentences)}")
             
         st.success(f"🎉 تم معالجة {len(processed_docs)} وثيقة بنجاح!")
+        
+        # حفظ في session state
+        st.session_state.processed_docs = processed_docs
+        
         return processed_docs
         
     except Exception as e:
         st.error(f"❌ خطأ في معالجة الوثائق: {e}")
         return []
 
-# استخدام الدالة
-processed_docs = process_documents()
+def extract_key_sentences(processed_docs: List[Dict], top_k: int = 3) -> Dict:
+    """استخراج أهم الجمل من كل وثيقة"""
+    if not processed_docs:
+        return {}
+    
+    # تحضير قائمة النصوص للتحليل
+    document_texts = [doc['original_text'] for doc in processed_docs]
+    
+    # تحليل وترتيب الجمل
+    ranked_sentences = fallback_tfidf_sentence_ranking(document_texts, top_k)
+    
+    return ranked_sentences
+
+def create_searchable_index(processed_docs: List[Dict]) -> Dict:
+    """إنشاء فهرس للبحث"""
+    search_index = {
+        'documents': {},
+        'words': {},
+        'sentences': []
+    }
+    
+    for doc in processed_docs:
+        doc_id = doc['id']
+        clean_text = doc['text']
+        sentences = doc['sentences']
+        
+        # فهرسة الوثيقة
+        search_index['documents'][doc_id] = {
+            'text': clean_text,
+            'sentences': sentences,
+            'word_count': len(clean_text.split())
+        }
+        
+        # فهرسة الكلمات
+        words = clean_text.split()
+        for word in words:
+            if len(word) > 2:
+                if word not in search_index['words']:
+                    search_index['words'][word] = []
+                search_index['words'][word].append(doc_id)
+        
+        # فهرسة الجمل
+        for sentence in sentences:
+            clean_sentence = clean_arabic_text(sentence)
+            search_index['sentences'].append({
+                'text': sentence,
+                'clean_text': clean_sentence,
+                'doc_id': doc_id,
+                'words': clean_sentence.split()
+            })
+    
+    return search_index
+
+# مثال للاستخدام
+def main():
+    st.title("🌍 منصة RAG المتطورة للوثائق العربية")
+    
+    # تحميل الوثائق
+    if 'document_texts' not in st.session_state:
+        st.session_state.document_texts = [
+            "هذا نص تجريبي باللغة العربية. يحتوي على عدة جمل للاختبار.",
+            "النص الثاني يتضمن معلومات مختلفة. هدفه اختبار النظام.",
+            "الوثيقة الثالثة تحتوي على محتوى متنوع ومفيد للغاية."
+        ]
+    
+    if st.button("معالجة الوثائق"):
+        processed_docs = process_documents()
+        
+        if processed_docs:
+            # استخراج الجمل المهمة
+            key_sentences = extract_key_sentences(processed_docs)
+            
+            st.subheader("🔍 أهم الجمل من كل وثيقة:")
+            for doc_id, sentences in key_sentences.items():
+                st.write(f"**{doc_id}:**")
+                for i, sent_info in enumerate(sentences, 1):
+                    st.write(f"  {i}. {sent_info['text']} (نقاط: {sent_info['score']:.3f})")
+                st.write("")
+            
+            # إنشاء فهرس البحث
+            search_index = create_searchable_index(processed_docs)
+            st.session_state.search_index = search_index
+            
+            st.success("تم إنشاء فهرس البحث بنجاح!")
+
+if __name__ == "__main__":
+    main()
