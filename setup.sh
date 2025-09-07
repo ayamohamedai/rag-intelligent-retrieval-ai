@@ -1,15 +1,6 @@
-#!/bin/bash
-# 🚀 إعداد وتشغيل النظام RAG العالمي
-
-echo "📦 تفعيل البيئة..."
-python3 -m venv venv
-source venv/bin/activate
-
-echo "⬇️ تنزيل المتطلبات..."
+#!/usr/bin/env bash
+python -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-
-echo "⚙️ نسخ ملف البيئة..."
-cp .env.example .env
-
-echo "✅ جاهز للتشغيل: streamlit run streamlit_app.py"
+echo "Setup complete. Run: source .venv/bin/activate && streamlit run app.py"
