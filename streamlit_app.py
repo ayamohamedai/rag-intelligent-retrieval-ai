@@ -669,4 +669,17 @@ def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_p
         all_sentences = []
         doc_mapping = []
         
-        for i, doc in enumerate(document_texts):
+       # ================================================
+# معالجة المستندات قبل بناء الـ FAISS/Chroma Index
+# ================================================
+
+processed_docs = []
+
+for i, doc in enumerate(document_texts):
+    clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
+    doc_id = f"doc_{i}"
+    processed_docs.append({
+        "id": doc_id,
+        "text": clean_doc
+    })
+    print(f"[RAG] Processed document {doc_id}")
