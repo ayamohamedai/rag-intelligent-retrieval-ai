@@ -663,17 +663,49 @@ def fallback_sentences_from_text(text: str) -> List[str]:
 
 def fallback_tfidf_sentence_ranking(document_texts: List[str], top_k_sentences_per_doc: int = 3):
     """ترتيب الجمل حسب الأهمية مع تحسينات للعربية"""
-try:
-    processed_docs = []
+def process_documents(documents_list=None):
+    """
+    معالجة قائمة الوثائق وتنظيفها
+    """
+    try:
+        # استخدام المتغير المُمرر أو البحث عن document_texts
+        if documents_list is None:
+            if 'document_texts' in st.session_state:
+                documents_list = st.session_state.document_texts
+            elif 'document_texts' in globals():
+                documents_list = document_texts
+            else:
+                st.error("لم يتم العثور على أي وثائق للمعالجة.")
+                return []
+        
+        if not documents_list:
+            st.warning("قائمة الوثائق فارغة.")
+            return []
+            
+        processed_docs = []
+        progress_bar = st.progress(0)
+        
+        for i, doc in enumerate(documents_list):
+            # تنظيف النص
+            clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
+            doc_id = f"doc_{i+1}"
+            
+            processed_docs.append({
+                "id": doc_id,
+                "text": clean_doc,
+                "length": len(clean_doc)
+            })
+            
+            # تحديث شريط التقدم
+            progress_bar.progress((i + 1) / len(documents_list))
+            st.write(f"✅ تم معالجة الوثيقة {doc_id} - الطول: {len(clean_doc)} حرف")
+            
+        st.success(f"🎉 تم معالجة {len(processed_docs)} وثيقة بنجاح!")
+        return processed_docs
+        
+    except Exception as e:
+        st.error(f"❌ خطأ في معالجة الوثائق: {e}")
+        return []
 
-    for i, doc in enumerate(document_texts):
-        clean_doc = doc.strip().replace("\n", " ").replace("\r", "")
-        doc_id = f"doc_{i}"
-        processed_docs.append({
-            "id": doc_id,
-            "text": clean_doc
-        })
-        print(f"[RAG] Processed document {doc_id}")
-
-except Exception as e:
-    st.error(f"Error processing documents: {e}")
+# استخدام الدالة
+processed_docs = process_documents()
