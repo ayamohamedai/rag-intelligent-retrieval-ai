@@ -521,14 +521,29 @@ def main():
         # حالة النظام
         st.subheader("📊 حالة النظام")
         
-        status_color = "🟢" if st.session_state.is_ready else "🔴"
-        st.write(f"{status_color} **حالة AI:** {'جاهز' if st.session_state.is_ready else 'غير مُعد'}")
+        # عرض حالة مفصلة
+        if st.session_state.is_ready:
+            st.markdown("🟢 **AI جاهز:** متصل ويعمل")
+            if hasattr(st.session_state.api_client, 'provider'):
+                st.write(f"📡 **المقدم:** {st.session_state.api_client.provider.upper()}")
+        else:
+            st.markdown("🔴 **AI غير جاهز:** يحتاج إعداد")
         
         docs_count = len(st.session_state.documents)
         chunks_count = len(st.session_state.processed_chunks)
         st.write(f"📚 **الوثائق:** {docs_count}")
         st.write(f"📄 **القطع المعالجة:** {chunks_count}")
         st.write(f"💬 **المحادثات:** {len(st.session_state.chat_history)}")
+        
+        # مؤشر الجاهزية الكاملة
+        if st.session_state.is_ready and chunks_count > 0:
+            st.success("✅ النظام جاهز للمحادثة!")
+        elif st.session_state.is_ready and chunks_count == 0:
+            st.warning("⚠️ API جاهز - يحتاج معالجة وثائق")
+        elif not st.session_state.is_ready and chunks_count > 0:
+            st.warning("⚠️ وثائق جاهزة - يحتاج إعداد AI")
+        else:
+            st.error("❌ يحتاج إعداد AI ومعالجة وثائق")
         
         st.divider()
         
