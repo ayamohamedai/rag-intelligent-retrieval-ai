@@ -367,16 +367,19 @@ class ChromaVectorStore:
         if not self.collection:
             if not self.initialize():
                 return False
-      metadatas = [
-    {
-        'doc_name': chunk.get('doc_name', ''),
-        'chunk_id': chunk.get('chunk_id', ''),
-        'word_count': len(clean_text.split()),
-        'char_count': len(clean_text),
-        'timestamp': datetime.now().isoformat(),
-        'processed': False
-    }
-]
+            try:
+            texts = [chunk['text'] for chunk in chunks]
+            ids = [str(chunk['id']) for chunk in chunks]
+            metadatas = [
+                {
+                    'doc_name': chunk.get('doc_name', ''),
+                    'chunk_id': chunk.get('chunk_id', ''),
+                    'word_count': len(clean_text.split()),
+                    'char_count': len(clean_text),
+                    'timestamp': datetime.now().isoformat(),
+                    'processed': False
+                }
+            ]
 
         
         st.session_state.documents.append(doc_data)
