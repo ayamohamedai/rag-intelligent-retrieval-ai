@@ -367,10 +367,12 @@ class ChromaVectorStore:
         if not self.collection:
             if not self.initialize():
                 return False
-        try:
+    try:
     texts = [chunk['text'] for chunk in chunks]
-    ids = [str(chunk['id']) for chunk in chunks]
-    metadatas = [
+    # أي أوامر إضافية هنا داخل الـ try
+except Exception as e:
+    print(f"Error: {e}")
+
         {
             'doc_name': chunk.get('doc_name', ''),
             'chunk_id': chunk.get('chunk_id', ''),
