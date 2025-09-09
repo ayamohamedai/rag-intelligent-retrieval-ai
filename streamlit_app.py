@@ -1450,14 +1450,10 @@ def export_documents():
         file_name=f"rag_documents_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
         mime="application/json"
     )
-
 # تشغيل التطبيق
 if __name__ == "__main__":
-    main()format()
-               ]
-                for chunk in chunks
-            ]
-            
+    main()
+    
             # تشفير النصوص
             embeddings = self.embedding_model.encode(texts)
             
