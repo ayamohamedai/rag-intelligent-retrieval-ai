@@ -1,10 +1,8 @@
-streamlit
-openai
-faiss-cpu
+sentence-transformers
 chromadb
 PyPDF2
 python-docx
-pandas
 nltk
-sentence-transformers
-tiktoken
+streamlit
+openai
+faiss-cpu
