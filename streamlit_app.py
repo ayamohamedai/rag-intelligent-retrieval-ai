@@ -366,7 +366,8 @@ class ChromaVectorStore:
         """إضافة الوثائق"""
         if not self.collection:
             if not self.initialize():
-                return False
+return False
+
 try:
     texts = [chunk['text'] for chunk in chunks]
     ids = [str(chunk['id']) for chunk in chunks]
@@ -381,19 +382,16 @@ try:
         }
         for chunk in chunks
     ]
+
+    # إضافة النصوص والمعالجة هنا
+    st.session_state.documents.append(doc_data)
+    st.session_state.processing_stats['documents_processed'] += 1
+    
+    st.success("✅ تم إضافة النص المباشر بنجاح!")
+    st.rerun()
+
 except Exception as e:
-    print(f"Error while preparing metadata: {e}")
-
-
-        
-        st.session_state.documents.append(doc_data)
-        st.session_state.processing_stats['documents_processed'] += 1
-        
-        st.success("✅ تم إضافة النص المباشر بنجاح!")
-        st.rerun()
-        
-    except Exception as e:
-        st.error(f"❌ خطأ في إضافة النص: {str(e)}")
+    st.error(f"❌ خطأ في إضافة النص: {str(e)}")
 
 def create_search_index():
     """إنشاء فهرس البحث المتقدم"""
