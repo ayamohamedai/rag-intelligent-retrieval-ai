@@ -1,6 +1,7 @@
 streamlit
 sentence-transformers
 chromadb==0.4.22
+numpy==1.26.4
 PyPDF2
 python-docx
 nltk
