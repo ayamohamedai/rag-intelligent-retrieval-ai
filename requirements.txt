@@ -1,7 +1,12 @@
 streamlit
-openai
 langchain
 faiss-cpu
-python-docx
-PyPDF2
+chromadb
+tiktoken
+numpy
 pandas
+python-docx
+pypdf
+PyPDF2
+sentence-transformers
+openai
