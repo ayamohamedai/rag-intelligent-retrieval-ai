@@ -1,9 +1,6 @@
-
+streamlit
 sentence-transformers
-chromadb
+chromadb==0.4.22
 PyPDF2
 python-docx
 nltk
-streamlit
-openai
-faiss-cpu
