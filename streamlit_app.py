@@ -2545,18 +2545,25 @@ def process_all_files(uploaded_files):
 
 def add_direct_text(text_content: str):
     """إضافة نص مباشر"""
-    try:
-        # معالجة النص
-        clean_text = st.session_state.doc_processor._enhance_arabic_text(text_content)
-        
-        doc_data = {
-            'id': len(st.session_state.documents),
-            'name': f'نص_مباشر_{len(st.session_state.documents) + 1}',
-            'type': 'نص مباشر',
-            'content': clean_text,
-            'metadata': {
-                'source': 'direct_input',
-                'word_count': len(clean_text.split()),
-                'character_count': len(clean_text)
-            },
-            'timestamp': datetime.now().iso
+  try:
+    # معالجة النص
+    clean_text = st.session_state.doc_processor._enhance_arabic_text(text_content)
+    
+    doc_data = {
+        'id': len(st.session_state.documents),
+        'name': f'نص_مباشر_{len(st.session_state.documents) + 1}',
+        'type': 'نص مباشر',
+        'content': clean_text,
+        'metadata': {
+            'source': 'direct_input',
+            'word_count': len(clean_text.split()),
+            'character_count': len(clean_text)
+        },
+        'timestamp': datetime.now().isoformat()
+    }
+
+    # إضافة المستند مباشرة إلى الـ session_state
+    st.session_state.documents.append(doc_data)
+
+except Exception as e:
+    st.error(f"Error processing text: {e}")
