@@ -10,3 +10,7 @@ pypdf
 PyPDF2
 sentence-transformers
 openai
+pytesseract
+Pillow
+docx2txt
+openpyxl
