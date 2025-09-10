@@ -6,4 +6,8 @@ chromadb
 tiktoken
 numpy
 pandas
+python-docx
+python-pptx
+openpyxl
+reportlab
 python-dotenv
